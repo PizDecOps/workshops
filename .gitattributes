@@ -1,0 +1,10 @@
+* text eol=lf
+
+*.md linguist-detectable=true
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+
+.gitattributes       export-ignore
+.gitignore           export-ignore
