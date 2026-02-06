@@ -12,16 +12,16 @@ release:
     npx standard-version
 
 # Релизы с явным указанием типа
+# Патч-релиз (0.1.0 → 0.1.1) - bug fixes
 release-patch:
-    # Патч-релиз (0.1.0 → 0.1.1) - bug fixes
     npx standard-version --release-as patch
 
+# Минорный релиз (0.1.0 → 0.2.0) - новые фичи без breaking changes
 release-minor:
-    # Минорный релиз (0.1.0 → 0.2.0) - новые фичи без breaking changes
     npx standard-version --release-as minor
 
+# Мажорный релиз (0.1.0 → 1.0.0) - breaking changes
 release-major:
-    # Мажорный релиз (0.1.0 → 1.0.0) - breaking changes
     npx standard-version --release-as major
 
 # Публикация релиза
