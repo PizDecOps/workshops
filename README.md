@@ -20,6 +20,7 @@
      <a href="./bash">
        <img src="https://github.com/devicons/devicon/blob/master/icons/bash/bash-original.svg" width="36" height="36" alt="Bash" />
      </a>
+     <br><b>Bash</b>
     </td>
   </tr>
 </table>
