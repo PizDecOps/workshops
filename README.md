@@ -11,13 +11,13 @@
 <table width='100%'>
   <tr>
     <td align="center" width="110" height="90">
-      <a href="./git">
+      <a href="./workshops/git">
         <img src="https://raw.githubusercontent.com/devicons/devicon/1119b9f84c0290e0f0b38982099a2bd027a48bf1/icons/git/git-original.svg" width="36" height="36" alt="Git" />
       </a>
       <br><b>Git</b>
     </td>
     <td align="center" width="110" height="90">
-     <a href="./bash">
+     <a href="./workshops/bash">
        <img src="https://github.com/devicons/devicon/blob/master/icons/bash/bash-original.svg" width="36" height="36" alt="Bash" />
      </a>
      <br><b>Bash</b>
