@@ -22,7 +22,7 @@
      </a>
      <br><b>Bash</b>
     </td>
-    <td>
+    <td align="center" width="110" height="90">
       <a href="./workshops/docker">
         <img src='https://github.com/devicons/devicon/blob/master/icons/docker/docker-original.svg' width="36" height="36" alt='Docker'>
       </a>
