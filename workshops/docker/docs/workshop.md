@@ -45,6 +45,37 @@ docker run --rm debian uname -r
 
 _Они идентичны. Это доказывает, что ядро общее._
 
+> Если вы используете Docker Desktop на macOS или Windows, команды выше покажут разные версии ядра:
+
+```bash
+# На хосте (macOS/Windows)
+uname -r
+# Вывод: 24.0.0 (или другой номер версии BSD/Windows)
+
+# В контейнере
+docker run --rm debian uname -r
+# Вывод: 6.10.14-linuxkit
+```
+
+Это не противоречит утверждению об общем ядре, а демонстрирует архитектуру Docker Desktop:
+
+1. **Docker Desktop создает легковесную виртуальную машину** (обычно на базе linuxkit) внутри вашей ОС
+2. **Все контейнеры используют ядро этой ВМ**, а не ядро хоста
+3. **ВМ общая для всех контейнеров** — они по-прежнему делят одно ядро между собой
+
+Как это проверить:
+
+```bash
+# Узнаем версию ядра, которое используют контейнеры
+docker info | grep "Kernel Version"
+
+# Запускаем два разных контейнера и проверяем их ядра
+docker run --rm alpine uname -r
+docker run --rm ubuntu uname -r
+docker run --rm fedora uname -r
+# Версии ядра будут одинаковыми!
+```
+
 ### Выводы
 
 - Контейнер — это просто изолированный процесс.
@@ -85,7 +116,7 @@ docker run -d --name web_server nginx
 # Посмотреть логи фонового контейнера
 docker logs web_server
 
-# Зайти в уже запущенный контейнер (Магия exec)
+# Зайти в уже запущенный контейнер
 docker exec -it web_server bash
 ```
 
@@ -107,9 +138,9 @@ docker exec -it web_server bash
 
 ### Текст для выступления
 
-Контейнер изолирован по сети (Network Namespace). У него свой IP-адрес, своя таблица маршрутизации и свой `localhost`.
+Контейнер изолирован по сети (**Network Namespace**). У него свой IP-адрес, своя таблица маршрутизации и свой `localhost`.
 
-Представьте: вы запустили веб-сервер внутри контейнера на порту 80. Если вы просто введете в браузере `http://localhost`, вы ничего не увидите. Почему? Потому что ваш браузер ищет порт 80 на вашем ноутбуке, а сервер сидит в "коробке". Чтобы магия сработала, мы используем Publishing (проброс портов). Мы буквально говорим Docker: "Любой трафик, пришедший на порт 8080 моего ноутбука, перенаправляй в порт 80 этого контейнера".
+Представьте: вы запустили веб-сервер внутри контейнера на порту `80`. Если вы просто введете в браузере `http://localhost`, вы ничего не увидите. Почему? Потому что ваш браузер ищет порт `80` на вашем ноутбуке, а сервер сидит в "коробке". Чтобы магия сработала, мы используем Publishing (проброс портов). Мы буквально говорим Docker: "Любой трафик, пришедший на порт `8080` моего ноутбука, перенаправляй в порт `80` этого контейнера".
 
 Но есть и вторая проблема: общение контейнеров между собой. Если ваше приложение хочет подключиться к базе данных в соседнем контейнере, оно не может использовать `localhost`. Для этого существуют **Docker Networks**, где контейнеры видят друг друга по именам, как в настоящей локальной сети.
 
@@ -209,7 +240,7 @@ docker volume create my_db_data
 docker run -d --name db_server -v my_db_data:/data alpine sleep 1000
 
 # Пишем данные
-docker exec db_server sh -c "echo 'Я выживу!' > /data/save.txt"
+docker exec db_server sh -c "echo 'Я выживу' > /data/save.txt"
 
 # Пересоздаем контейнер
 docker rm -f db_server
@@ -295,14 +326,17 @@ echo "DB_PASS=super_secret" >> config.env
 echo "DEBUG=true" >> config.env
 
 # Запускаем контейнер, подтягивая весь файл целиком
-docker run --rm --env-file config.env alpine printenv | grep -E "DB_|DEBUG"
+docker run -d \
+  --name my-db \
+  --env-file config.env \
+  mariadb:12.2
 ```
 
 4. Просмотр переменных в запущенном контейнере.
 
 ```bash
 # Если вы забыли, с какими параметрами запущен сервис
-docker inspect my-db --format '{{range .Config.Env}}{{println .}}{{end}}'
+docker inspect my-db --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E "DB_|DEBUG"
 ```
 
 - **Разделяй код и конфиг.** Образ — это код, переменные окружения — это конфиг.
@@ -348,11 +382,11 @@ Dockerfile — это обычный текстовый файл, который
 mkdir my-python-app && cd my-python-app
 
 # Создадим простейший скрипт app.py
-echo "print('Hello from Dockerized Python!')" > app.py
+echo "print('Hello from Dockerized Python')" > app.py
 
 # Создаем Dockerfile
 cat <<EOF > Dockerfile
-FROM python:3.9-slim
+FROM python:3.12-slim
 WORKDIR /app
 COPY app.py .
 CMD ["python", "app.py"]
@@ -431,7 +465,7 @@ touch app.py requirements.txt
 
 # ПЛОХОЙ ПРИМЕР: сначала копируем всё, потом ставим зависимости
 cat <<EOF > Dockerfile.bad
-FROM python:3.9-slim
+FROM python:3.12-slim
 WORKDIR /app
 COPY . .
 RUN pip install -r requirements.txt
@@ -451,7 +485,7 @@ docker build -t bad-cache -f Dockerfile.bad .
 
 ```bash
 cat <<EOF > Dockerfile.good
-FROM python:3.9-slim
+FROM python:3.12-slim
 WORKDIR /app
 
 # Копируем ТОЛЬКО файл со списком библиотек
@@ -485,9 +519,9 @@ _Интересный факт: Если удалить временные фа�
 
 ```bash
 # Сравним размеры в терминале
-docker pull python:3.9
-docker pull python:3.9-slim
-docker pull python:3.9-alpine
+docker pull python:3.12
+docker pull python:3.12-slim
+docker pull python:3.12-alpine
 docker images | grep python
 ```
 
@@ -496,11 +530,9 @@ docker images | grep python
 - Меняющееся — вниз, стабильное — вверх. Код приложения должен копироваться последним.
 - Объединяй логически связанные команды. `apt-get update` и `install` всегда должны быть в одном `RUN`.
 - Чисти за собой в том же слое. Удалил кэши пакетного менеджера в том же RUN, где установил софт — сэкономил место.
-- Используй `.dockerignore`. Не давай Docker копировать папку .`git`, логи и временные файлы внутрь образа.
+- Используй `.dockerignore`. Не давай Docker копировать папку `.git`, логи и временные файлы внутрь образа.
 
 ### Вопросы
-
-Вопросы
 
 - В: Почему бы всегда не использовать Alpine, раз он самый маленький?
   - О: Alpine использует библиотеку `musl` вместо стандартной `glibc`. Некоторые сложные библиотеки (особенно на Python или С++) могут работать медленнее или вообще не собраться без танцев с бубном. `slim` — часто золотая середина.
@@ -544,6 +576,7 @@ import "fmt"
 func main() {
   fmt.Println("Я МАЛЕНЬКИЙ ПРОД РЕДИ КОД!")
 }
+EOF
 ```
 
 2. Пишем Multi-stage Dockerfile.
@@ -603,12 +636,12 @@ _Расскажи, как в первом этапе мы делаем `npm run 
 ### Введение
 
 - **Проблема "Портянки":** Помните, сколько флагов мы вообще использовали постоянно? (`-p`, `-v`, `-e`, `--network`, `--name`) нам приходилось писать для одного контейнера. А если их пять? Docker Compose превращает эту "портянку" в структурированный YAML-файл.
-- **Инфраструктура как код (IaC):** Объясни, что `docker-compose.yml` — это документ, который можно положить в Git. Новый разработчик скачивает проект, пишет одну команду и через минуту у него поднята вся среда.
+- **Инфраструктура как код (IaC):** `docker-compose.yml` — это документ, который можно положить в Git. Новый разработчик скачивает проект, пишет одну команду и через минуту у него поднята вся среда.
 - Есть ещё такая крутая вещь как `depends_on` и контексты сборки. Compose сам создаст сеть для всех сервисов внутри файла, так что им не нужно настраивать линки вручную.
 
 ### Текст для выступления
 
-До этого момента мы работали как плотники с молотком: один гвоздь — один удар. Но современное приложение — это не только ваш код. Это база данных, кэш Redis, брокер сообщений и, возможно, фронтенд.
+Современное приложение — это не только ваш код. Это база данных, кэш Redis, брокер сообщений и, возможно, фронтенд.
 
 **Docker Compose** — это инструмент для описания и запуска многоконтейнерных приложений. Вместо того чтобы помнить все параметры запуска, мы записываем их в файл docker-compose.yml.
 
@@ -624,29 +657,31 @@ _Расскажи, как в первом этапе мы делаем `npm run 
 mkdir compose-demo && cd compose-demo
 # Напишем простой app.py
 cat <<EOF > app.py
-import time
 import redis
 from flask import Flask
 
-app = Flask(name)
-cache = redis.Redis(host='redis', port=6379)
+app = Flask(__name__)
+cache = redis.Redis(host="redis", port=6379)
 
-@app.route('/')
+
+@app.route("/")
 def hello():
-  count = cache.incr('hits')
-  return f'Привет! Я обновлялся {count} раз.\n'
+    count = cache.incr("hits")
+    return f"Привет! Я обновлялся {count} раз.\n"
 
-if name == "main":
-  app.run(host="0.0.0.0", port=5000)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
 EOF
 ```
 
 2. Готовим Dockerfile и зависимости.
 
 ```bash
-echo "flask\nredis" > requirements.txt
+echo -e "flask\nredis" > requirements.txt
 cat <<EOF > Dockerfile
-FROM python:3.9-slim
+FROM python:3.12-slim
 WORKDIR /code
 
 COPY requirements.txt .
@@ -731,16 +766,20 @@ docker-compose down
 Покажем, как создать пользователя и переключиться на него.
 
 ```Dockerfile
-FROM python:3.9-slim
+FROM python:3.12-slim
 
-# Создаем системную группу и пользователя
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 WORKDIR /app
+
+# Копируем только requirements.txt для кэширования зависимостей
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копируем остальной код и переключаем пользователя
 COPY --chown=appuser:appuser . .
 
-# Переключаемся! Теперь все команды ниже и сам старт приложения
-# будут идти от имени бесправного appuser
 USER appuser
 
 CMD ["python", "app.py"]
@@ -774,10 +813,10 @@ _Обратите внимание на размер "Context" при `docker bu
 
 ```bash
 # Просканируем наш старый образ nginx или python
-docker scout quickview python:3.9
+docker scout quickview python:3.12
 
 # Или более детально по конкретным CVE
-docker scout cves python:3.9
+docker scout cves python:3.12
 ```
 
 4. No-New-Privileges.
