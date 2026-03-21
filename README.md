@@ -28,6 +28,12 @@
       </a>
      <br><b>Docker</b>
     </td>
+    <td align="center" width="110" height="90">
+      <a href="./workshops/kubernetes">
+        <img src="https://github.com/devicons/devicon/blob/master/icons/kubernetes/kubernetes-original.svg" width="36" height="36" alt="Kubernetes" />
+      </a>
+      <br>Kubernetes
+    </td>
   </tr>
 </table>
 
@@ -35,11 +41,12 @@
 
 ## 📂 Доступные материалы
 
-| Название          | Описание                                                                | Ссылка                          |
-| :---------------- | :---------------------------------------------------------------------- | :------------------------------ |
-| **Git Deep Dive** | Внутреннее устройство, работа с индексом, Rebase, Reflog и Worktrees.   | [Перейти ➔](./workshops/git)    |
-| **Bash**          | Потоки I/O, циклы, регулярные выражения и написание надежных скриптов.  | [Перейти ➔](./workshops/bash)   |
-| **Docker**        | Архитектура, оптимизация слоев, Multi-stage builds и оркестрация стека. | [Перейти ➔](./workshops/docker) |
+| Название          | Описание                                                                                                          | Ссылка                              |
+| :---------------- | :---------------------------------------------------------------------------------------------------------------- | :---------------------------------- |
+| **Git Deep Dive** | Внутреннее устройство, работа с индексом, Rebase, Reflog и Worktrees.                                             | [Перейти ➔](./workshops/git)        |
+| **Bash**          | Потоки I/O, циклы, регулярные выражения и написание надежных скриптов.                                            | [Перейти ➔](./workshops/bash)       |
+| **Docker**        | Архитектура, оптимизация слоев, Multi-stage builds и оркестрация стека.                                           | [Перейти ➔](./workshops/docker)     |
+| **Kubernetes**    | Архитектура кластера, декларативный подход, Pods, Deployments, Services, ConfigMaps, Secrets и сетевая адресация. | [Перейти ➔](./workshops/kubernetes) |
 
 ---
 
