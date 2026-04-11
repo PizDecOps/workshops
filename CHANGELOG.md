@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/PizDecOps/workshops/compare/v1.2.2...v1.3.0) (2026-04-11)
+
+
+### Features
+
+* **workshop:** add k8s workshop stability works in cluster ([5220193](https://github.com/PizDecOps/workshops/commit/5220193722471e5cfd76028972e8d0982d6626fb))
+
 ### [1.2.2](https://github.com/PizDecOps/workshops/compare/v1.2.1...v1.2.2) (2026-04-11)
 
 
