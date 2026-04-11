@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.2](https://github.com/PizDecOps/workshops/compare/v1.2.1...v1.2.2) (2026-04-11)
+
+
+### Bug Fixes
+
+* **k8s:** fixed md markup header ([fa67e34](https://github.com/PizDecOps/workshops/commit/fa67e3493da3f0f41ae58ba24133ff5e12a6221b))
+
 ### [1.2.1](https://github.com/PizDecOps/workshops/compare/v1.2.0...v1.2.1) (2026-04-11)
 
 
