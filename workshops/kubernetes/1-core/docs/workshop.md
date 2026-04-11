@@ -13,7 +13,7 @@
 9. **Secrets:** Работа с base64 и безопасная передача ключей.
 10. **Порты и TargetPorts:** Конечная схема сетевых адресов.
 
-## Блок 1: Control Plane & Nodes — Разделение ответственности
+## Блок 1: Control Plane & Nodes - Разделение ответственности
 
 ### Текст для выступления
 
@@ -24,9 +24,9 @@
 Это управляющий слой. Он принимает решения о том, где запустить нагрузку, следит за состоянием системы и реагирует на события.
 
 - **kube-apiserver:** "Лицо" кластера. Единственный компонент, с которым общаемся мы (через kubectl) и все остальные компоненты.
-- **etcd:** Священное Key-Value хранилище. Здесь лежит **всё** состояние кластера. Если etcd пуст — кластера не существует.
+- **etcd:** Священное Key-Value хранилище. Здесь лежит **всё** состояние кластера. Если etcd пуст - кластера не существует.
 - **kube-scheduler:** "Умный логист". Выбирает, на какой ноде запустить ваш Pod, основываясь на ресурсах и ограничениях.
-- **kube-controller-manager:** "Надзиратель". Следит за тем, чтобы реальное состояние соответствовало желаемому (например, если Pod упал — он создаст новый).
+- **kube-controller-manager:** "Надзиратель". Следит за тем, чтобы реальное состояние соответствовало желаемому (например, если Pod упал - он создаст новый).
 
 ### Worker Nodes
 
@@ -78,69 +78,69 @@ kubectl get pods -n kube-system
 
 1. Императивный подход (как в Docker):
 
-```bash
-# Запустим под одной командой
-kubectl run nginx-temp --image=nginx
+   ```bash
+   # Запустим под одной командой
+   kubectl run nginx-temp --image=nginx
 
-# Проверим результат
-kubectl get pods
+   # Проверим результат
+   kubectl get pods
 
-# Удалим его
-kubectl delete pod nginx-temp
-```
+   # Удалим его
+   kubectl delete pod nginx-temp
+   ```
 
 2. Декларативный подход (Магия YAML):
 
-Создадим файл pod.yaml:
+   Создадим файл pod.yaml:
 
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx-pod
-  labels:
-    app: web
-spec:
-  containers:
-    - name: nginx-container
-      image: nginx:stable
-```
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: nginx-pod
+     labels:
+       app: web
+   spec:
+     containers:
+       - name: nginx-container
+         image: nginx:stable
+   ```
 
-Применим его:
+   Применим его:
 
-```bash
-# "Примени это состояние к кластеру"
-kubectl apply -f pod.yaml
+   ```bash
+   # "Примени это состояние к кластеру"
+   kubectl apply -f pod.yaml
 
-# Посмотрим, что изменилось
-kubectl get pods
-```
+   # Посмотрим, что изменилось
+   kubectl get pods
+   ```
 
 _Главное отличие: если вы запустите `apply` еще раз, K8s ничего не сделает, так как состояние уже достигнуто (Idempotency)._
 
 ### Выводы
 
-- `kubectl` — это ваш пульт управления API-сервером.
-- YAML-файлы — это "источник истины". Их хранят в Git.
+- `kubectl` - это ваш пульт управления API-сервером.
+- YAML-файлы - это "источник истины". Их хранят в Git.
 - Структура YAML всегда включает: `apiVersion`, `kind`, `metadata` и `spec`.
-- `kubectl apply` — самая важная команда в жизни DevOps-инженера
+- `kubectl apply` - самая важная команда в жизни DevOps-инженера
 
 ### Вопросы
 
 - В: Что будет, если я вручную удалю под, созданный через YAML?
-  - О: В данном случае (если это просто Pod) — он исчезнет навсегда. Если бы он был частью Deployment (разберем в Блоке 6) — K8s сразу создал бы новый.
+  - О: В данном случае (если это просто Pod) - он исчезнет навсегда. Если бы он был частью Deployment (разберем в Блоке 6) - K8s сразу создал бы новый.
 - В: Обязательно ли знать все поля YAML наизусть?
   - О: Нет, используйте `kubectl explain pod.spec` для получения встроенной справки по любому полю.
 - В: В чем разница между `kubectl create` и `kubectl apply`?
   - О: `create` выдаст ошибку, если ресурс уже есть. `apply` обновит существующий ресурс или создаст новый.
 
-## Блок 3: Pods — Контейнеры, Init-контейнеры и Sidecars
+## Блок 3: Pods - Контейнеры, Init-контейнеры и Sidecars
 
 ### Текст для выступления
 
 В Docker единицей управления был контейнер. В Kubernetes это Pod.
 
-Под — это абстракция, которая объединяет один или несколько контейнеров в единую сущность. Контейнеры внутри одного Пода всегда запускаются на одной и той же ноде, делят один IP-адрес и могут обращаться друг к другу через `localhost`.
+Под - это абстракция, которая объединяет один или несколько контейнеров в единую сущность. Контейнеры внутри одного Пода всегда запускаются на одной и той же ноде, делят один IP-адрес и могут обращаться друг к другу через `localhost`.
 
 Зачем это нужно? Чтобы реализовать паттерны:
 
@@ -151,53 +151,53 @@ _Главное отличие: если вы запустите `apply` еще 
 
 1. Создадим многоконтейнерный Под `pod-multi.yaml`:
 
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: multi-container-pod
-spec:
-  containers:
-    - name: app-container
-      image: alpine
-      command:
-        [
-          "sh",
-          "-c",
-          'while true; do echo "Hello from App" >> /data/index.html; sleep 5; done',
-        ]
-      volumeMounts:
-        - name: shared-data
-          mountPath: /data
-    - name: sidecar-container
-      image: nginx:stable
-      volumeMounts:
-        - name: shared-data
-          mountPath: /usr/share/nginx/html
-  volumes:
-    - name: shared-data
-      emptyDir: {}
-```
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: multi-container-pod
+   spec:
+     containers:
+       - name: app-container
+         image: alpine
+         command:
+           [
+             "sh",
+             "-c",
+             'while true; do echo "Hello from App" >> /data/index.html; sleep 5; done',
+           ]
+         volumeMounts:
+           - name: shared-data
+             mountPath: /data
+       - name: sidecar-container
+         image: nginx:stable
+         volumeMounts:
+           - name: shared-data
+             mountPath: /usr/share/nginx/html
+     volumes:
+       - name: shared-data
+         emptyDir: {}
+   ```
 
 2. Применим и проверим взаимодействие:
 
-```bash
-# Создаем под
-kubectl apply -f pod-multi.yaml
+   ```bash
+   # Создаем под
+   kubectl apply -f pod-multi.yaml
 
-# Посмотрим статус (в колонке READY будет 2/2)
-kubectl get pods
+   # Посмотрим статус (в колонке READY будет 2/2)
+   kubectl get pods
 
-# Проверим, видит ли nginx данные от alpine через localhost
-kubectl exec multi-container-pod -c sidecar-container -- curl localhost
-```
+   # Проверим, видит ли nginx данные от alpine через localhost
+   kubectl exec multi-container-pod -c sidecar-container -- curl localhost
+   ```
 
 _Мы видим, что два разных образа работают как одно целое, разделяя дисковое пространство и сеть._
 
 ### Выводы
 
-- Под — это минимальная единица развертывания в K8s.
-- Контейнеры внутри пода — «сиамские близнецы»: общая сеть, общее время жизни, общие тома.
+- Под - это минимальная единица развертывания в K8s.
+- Контейнеры внутри пода - "сиамские близнецы": общая сеть, общее время жизни, общие тома.
 - Использовать несколько контейнеров в поде стоит только тогда, когда они не могут жить друг без друга.
 
 ### Вопросы
@@ -205,11 +205,11 @@ _Мы видим, что два разных образа работают ка�
 - В: Можно ли в одном поде запустить два контейнера, которые слушают 80 порт?
   - О: Нет. У них общий сетевой стек (IP), возникнет конфликт портов.
 - В: Что будет, если один контейнер в поде упадет?
-  - О: Kubernetes перезапустит весь под или конкретный контейнер (в зависимости от RestartPolicy), чтобы вернуть систему в Desired State.
+  - О: Kubernetes перезапустит **только упавший контейнер** внутри того же пода (согласно `restartPolicy`). Сам Pod останется на том же узле (Node) с тем же IP-адресом. Если же упадет сам узел, то Kubernetes создаст новый под на другом узле (через механизм Deployment/ReplicaSet).
 - В: Как общаются контейнеры внутри пода?
   - О: Через `localhost:[PORT]`. Им не нужно знать внешние IP друг друга.
 
-## Блок 4: Namespaces — Изоляция ресурсов и квоты
+## Блок 4: Namespaces - Изоляция ресурсов и квоты
 
 ### Текст для выступления
 
@@ -227,40 +227,40 @@ _Мы видим, что два разных образа работают ка�
 
 1. Посмотрим текущие пространства имен:
 
-```bash
-kubectl get namespaces
-```
+   ```bash
+   kubectl get namespaces
+   ```
 
 2. Создадим свое пространство и запустим там под:
 
-```bash
-# Создаем неймспейс
-kubectl create namespace workshop-team-a
+   ```bash
+   # Создаем неймспейс
+   kubectl create namespace workshop-team-a
 
-# Запускаем под именно в этом неймспейсе
-kubectl run nginx-a --image=nginx -n workshop-team-a
+   # Запускаем под именно в этом неймспейсе
+   kubectl run nginx-a --image=nginx -n workshop-team-a
 
-# Проверяем (в default поде его не будет!)
-kubectl get pods
-kubectl get pods -n workshop-team-a
-```
+   # Проверяем (в default поде его не будет!)
+   kubectl get pods
+   kubectl get pods -n workshop-team-a
+   ```
 
 3. Установим контекст (чтобы не писать каждый раз `-n`):
 
-```bash
-# Посмотреть текущий контекст
-kubectl config current-context
+   ```bash
+   # Посмотреть текущий контекст
+   kubectl config current-context
 
-# Переключиться на неймспейс по умолчанию для всех команд
-kubectl config set-context --current --namespace=workshop-team-a
+   # Переключиться на неймспейс по умолчанию для всех команд
+   kubectl config set-context --current --namespace=workshop-team-a
 
-# Теперь kubectl get pods сразу покажет наш неймспейс
-kubectl get pods
-```
+   # Теперь kubectl get pods сразу покажет наш неймспейс
+   kubectl get pods
+   ```
 
 ### Выводы
 
-- Namespaces — это логические границы, а не физические (ноды общие, сеть общая).
+- Namespaces - это логические границы, а не физические (ноды общие, сеть общая).
 - Помогают избежать конфликтов имен (может быть два пода `web`, если они в разных NS).
 - Это фундамент для безопасности (RBAC) и ограничения ресурсов (Quotas).
 
@@ -273,7 +273,7 @@ kubectl get pods
 - В: Что будет с ресурсами внутри Namespaces, если удалить сам Namespace?
   - О: Удалятся абсолютно все ресурсы, которые в нем находились (поды, сервисы, секреты). Будь осторожен!
 
-## Блок 5: Labels & Selectors — Магия связей в K8s
+## Блок 5: Labels & Selectors - Магия связей в K8s
 
 ### Текст для выступления
 
@@ -288,40 +288,40 @@ kubectl get pods
 
 1. Запустим два пода с разными метками:
 
-```bash
-# Первый под — версия 1.0
-kubectl run nginx-v1 --image=nginx --labels="app=web,ver=1"
+   ```bash
+   # Первый под - версия 1.0
+   kubectl run nginx-v1 --image=nginx --labels="app=web,ver=1"
 
-# Второй под — версия 2.0
-kubectl run nginx-v2 --image=nginx --labels="app=web,ver=2"
-```
+   # Второй под - версия 2.0
+   kubectl run nginx-v2 --image=nginx --labels="app=web,ver=2"
+   ```
 
 2. Используем селекторы для поиска:
 
-```bash
-# Найти все поды приложения 'web'
-kubectl get pods -l app=web
+   ```bash
+   # Найти все поды приложения 'web'
+   kubectl get pods -l app=web
 
-# Найти только версию 2
-kubectl get pods -l ver=2
+   # Найти только версию 2
+   kubectl get pods -l ver=2
 
-# Показать все поды и вывести их метки отдельной колонкой
-kubectl get pods --show-labels
-```
+   # Показать все поды и вывести их метки отдельной колонкой
+   kubectl get pods --show-labels
+   ```
 
 3. Изменение меток "на лету":
 
-```bash
-# Добавим метку существующему поду
-kubectl label pod nginx-v1 tier=frontend
+   ```bash
+   # Добавим метку существующему поду
+   kubectl label pod nginx-v1 tier=frontend
 
-# Удалим метку (знак минуса в конце)
-kubectl label pod nginx-v1 ver-
-```
+   # Удалим метку (знак минуса в конце)
+   kubectl label pod nginx-v1 ver-
+   ```
 
 ### Выводы
 
-- Метки — это единственный способ группировки ресурсов в K8s.
+- Метки - это единственный способ группировки ресурсов в K8s.
 - Селекторы позволяют объектам быть максимально независимыми (Loosely Coupled).
 - Без меток не работают ни Сервисы, ни Деплойменты.
 
@@ -332,70 +332,70 @@ kubectl label pod nginx-v1 ver-
 - В: Что будет, если я изменю метку у работающего пода так, что она перестанет подпадать под селектор Деплоймента?
   - О: Деплоймент "потеряет" этот под и тут же создаст новый, чтобы восполнить количество реплик. А "старый" под останется жить сам по себе (Orphaned pod).
 - В: Чувствительны ли метки к регистру?
-  - О: Да, метки App=web и app=web — это разные метки.
+  - О: Да, метки App=web и app=web - это разные метки.
 
-## Блок 6: Deployments — Репликация и управление версиями
+## Блок 6: Deployments - Репликация и управление версиями
 
 ### Текст для выступления
 
 Запускать одиночные поды (`kind: Pod`) в продакшене нельзя: если нода умрет, под не пересоздастся. Для этого существует Deployment.
 
-Deployment — это контроллер, который следит за тем, чтобы в кластере всегда работало нужное количество копий вашего приложения (**Desired State**). Если под упадет — Deployment создаст новый. Если вы захотите обновить версию — Deployment сделает это плавно, по очереди заменяя старые поды на новые (**Rolling Update**).
+Deployment - это контроллер, который следит за тем, чтобы в кластере всегда работало нужное количество копий вашего приложения (**Desired State**). Если под упадет - Deployment создаст новый. Если вы захотите обновить версию - Deployment сделает это плавно, по очереди заменяя старые поды на новые (**Rolling Update**).
 
 ### Живое демо
 
 1. Создадим файл `deployment.yaml`:
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: web
-  template:
-    metadata:
-      labels:
-        app: web
-    spec:
-      containers:
-        - name: nginx
-          image: nginx:1.25
-          ports:
-            - containerPort: 80
-```
+   ```yaml
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: nginx-deployment
+   spec:
+     replicas: 3
+     selector:
+       matchLabels:
+         app: web
+     template:
+       metadata:
+         labels:
+           app: web
+       spec:
+         containers:
+           - name: nginx
+             image: nginx:1.25
+             ports:
+               - containerPort: 80
+   ```
 
 2. Применим и проверим магию самолечения:
 
-```bash
-# Создаем деплоймент
-kubectl apply -f deployment.yaml
+   ```bash
+   # Создаем деплоймент
+   kubectl apply -f deployment.yaml
 
-# Проверяем (должно быть 3 пода)
-kubectl get pods
+   # Проверяем (должно быть 3 пода)
+   kubectl get pods
 
-# Вручную удалим один под
-kubectl delete pod <название-любого-пода>
+   # Вручную удалим один под
+   kubectl delete pod <название-любого-пода>
 
-# Сразу же проверяем снова. K8s уже создал замену!
-kubectl get pods
-```
+   # Сразу же проверяем снова. K8s уже создал замену!
+   kubectl get pods
+   ```
 
 3. Масштабирование и обновление версии:
 
-```bash
-# Увеличим количество копий до 5
-kubectl scale deployment nginx-deployment --replicas=5
+   ```bash
+   # Увеличим количество копий до 5
+   kubectl scale deployment nginx-deployment --replicas=5
 
-# Обновим образ до версии 1.26
-kubectl set image deployment/nginx-deployment nginx=nginx:1.26
+   # Обновим образ до версии 1.26
+   kubectl set image deployment/nginx-deployment nginx=nginx:1.26
 
-# Следим за процессом обновления (старые удаляются, новые создаются)
-kubectl rollout status deployment/nginx-deployment
-```
+   # Следим за процессом обновления (старые удаляются, новые создаются)
+   kubectl rollout status deployment/nginx-deployment
+   ```
 
 ### Выводы
 
@@ -407,19 +407,19 @@ kubectl rollout status deployment/nginx-deployment
 ### Вопросы
 
 - В: В чем разница между `replicas` в манифесте и командой `kubectl scale`?
-  - О: Команда `scale` меняет состояние только в кластере. Если вы потом снова сделаете apply файла, где написано 3 реплики — количество снова уменьшится до 3. Файл всегда важнее.
+  - О: Команда `scale` меняет состояние только в кластере. Если вы потом снова сделаете apply файла, где написано 3 реплики - количество снова уменьшится до 3. Файл всегда важнее.
 - В: Что будет, если я укажу образ, которого не существует?
   - О: Deployment начнет обновление, создаст первый под, увидит ошибку `ImagePullBackOff` и остановится, оставив часть старых подов работать. Приложение не "ляжет" полностью.
 - В: Можно ли сделать откат на конкретную версию в истории?
   - О: Да, с помощью `kubectl rollout history` можно посмотреть ревизии и откатиться на нужную.
 
-## Блок 7: Services (L4) — ClusterIP, NodePort и балансировка
+## Блок 7: Services (L4) - ClusterIP, NodePort и балансировка
 
 ### Текст для выступления
 
 Поды в Kubernetes эфемерны: они рождаются и умирают, и при каждом пересоздании получают новый IP-адрес. Настраивать связи между приложениями по IP подов невозможно.
 
-**Service** — это абстракция, которая определяет стабильный IP-адрес и DNS-имя для группы подов (выбранных по `Selector`). Даже если все поды в Deployment пересоздадутся, IP сервиса останется неизменным.
+**Service** - это абстракция, которая определяет стабильный IP-адрес и DNS-имя для группы подов (выбранных по `Selector`). Даже если все поды в Deployment пересоздадутся, IP сервиса останется неизменным.
 
 Основные типы сервисов:
 
@@ -431,66 +431,66 @@ kubectl rollout status deployment/nginx-deployment
 
 1. Создадим сервис типа ClusterIP для нашего Deployment из прошлого блока:
 
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: my-web-service
-spec:
-  type: ClusterIP
-  selector:
-    app: web
-  ports:
-    - port: 80 # Порт самого сервиса
-      targetPort: 80 # Порт, который слушает контейнер внутри пода
-```
+   ```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: my-web-service
+   spec:
+     type: ClusterIP
+     selector:
+       app: web
+     ports:
+       - port: 80 # Порт самого сервиса
+         targetPort: 80 # Порт, который слушает контейнер внутри пода
+   ```
 
 2. Проверим доступность внутри кластера:
 
-```yaml
-kubectl apply -f service.yaml
+   ```yaml
+   kubectl apply -f service.yaml
 
-# Узнаем Cluster-IP сервиса
-kubectl get svc my-web-service
+   # Узнаем Cluster-IP сервиса
+   kubectl get svc my-web-service
 
-# Запустим временный под и попробуем достучаться до сервиса по имени
-kubectl run test-curl --image=curlimages/curl -i --tty --rm -- curl http://my-web-service
-```
+   # Запустим временный под и попробуем достучаться до сервиса по имени
+   kubectl run test-curl --image=curlimages/curl -i --tty --rm -- curl http://my-web-service
+   ```
 
 3. Превратим его в NodePort, чтобы увидеть из браузера:
 
-```bash
-# Меняем тип сервиса "на лету"
-kubectl patch svc my-web-service -p '{"spec": {"type": "NodePort"}}'
+   ```bash
+   # Меняем тип сервиса "на лету"
+   kubectl patch svc my-web-service -p '{"spec": {"type": "NodePort"}}'
 
-# Узнаем, какой порт выделил K8s (в диапазоне 30000-32767)
-kubectl get svc my-web-service
-```
+   # Узнаем, какой порт выделил K8s (в диапазоне 30000-32767)
+   kubectl get svc my-web-service
+   ```
 
 _Теперь приложение доступно по IP любой вашей ноды и указанному порту._
 
 ### Выводы
 
-- Сервис — это «умный клей» и балансировщик трафика между подами.
-- ClusterIP — для внутренних связей, NodePort/LoadBalancer — для внешнего трафика.
-- Сервис находит поды по `labels`. Если метки на поде не совпадают с селектором сервиса — трафик не пойдет.
+- Сервис - это "умный клей" и балансировщик трафика между подами.
+- ClusterIP - для внутренних связей, NodePort/LoadBalancer - для внешнего трафика.
+- Сервис находит поды по `labels`. Если метки на поде не совпадают с селектором сервиса - трафик не пойдет.
 
 ### Вопросы
 
 - В: Если у меня 5 реплик пода, на какую из них отправит запрос Сервис?
   - О: По умолчанию используется случайная балансировка (Round Robin через iptables/IPVS).
 - В: Что такое `targetPort`?
-  - О: Это порт, на котором реально запущено приложение внутри контейнера. `port` — это порт, который будет "виден" снаружи сервиса.
+  - О: Это порт, на котором реально запущено приложение внутри контейнера. `port` - это порт, который будет "виден" снаружи сервиса.
 - В: Как работает DNS в Kubernetes?
   - О: K8s автоматически создает запись `название-сервиса.неймспейс.svc.cluster.local`. Вы можете просто писать `curl my-db` вместо IP.
 
-## Блок 8: ConfigMaps — Управление конфигурациями без пересборки образов
+## Блок 8: ConfigMaps - Управление конфигурациями без пересборки образов
 
 ### Текст для выступления
 
-Главный принцип Cloud Native приложений: **один образ — много сред**. Мы не должны пересобирать Docker-образ только потому, что у нас изменился адрес базы данных или уровень логирования.
+Главный принцип Cloud Native приложений: **один образ - много сред**. Мы не должны пересобирать Docker-образ только потому, что у нас изменился адрес базы данных или уровень логирования.
 
-**ConfigMap** — это объект Kubernetes, который позволяет хранить настройки в виде пар `ключ: значение` или целых конфиг-файлов отдельно от кода. Эти данные можно "прокинуть" в контейнер двумя способами:
+**ConfigMap** - это объект Kubernetes, который позволяет хранить настройки в виде пар `ключ: значение` или целых конфиг-файлов отдельно от кода. Эти данные можно "прокинуть" в контейнер двумя способами:
 
 1. Как переменные окружения (**Environment Variables**).
 2. Как файлы в виртуальной файловой системе (**Volumes**).
@@ -499,51 +499,51 @@ _Теперь приложение доступно по IP любой ваше�
 
 1. Создадим ConfigMap императивно (из строки):
 
-```bash
-kubectl create configmap app-config --from-literal=APP_COLOR=blue --from-literal=UI_MODE=dark
-```
+   ```bash
+   kubectl create configmap app-config --from-literal=APP_COLOR=blue --from-literal=UI_MODE=dark
+   ```
 
 2. Пробросим его в под через переменные окружения:
 
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: config-env-pod
-spec:
-  containers:
-    - name: test-container
-      image: busybox
-      command: ["/bin/sh", "-c", "env | grep APP"]
-      envFrom:
-        - configMapRef:
-            name: app-config
-```
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: config-env-pod
+   spec:
+     containers:
+       - name: test-container
+         image: busybox
+         command: ["/bin/sh", "-c", "env | grep APP"]
+         envFrom:
+           - configMapRef:
+               name: app-config
+   ```
 
 3. Монтирование конфиг-файла (например, `nginx.conf`):
 
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: config-file-pod
-spec:
-  containers:
-    - name: nginx
-      image: nginx
-      volumeMounts:
-        - name: config-volume
-          mountPath: /etc/nginx/conf.d # Файл появится здесь
-  volumes:
-    - name: config-volume
-      configMap:
-        name: my-nginx-config
-```
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: config-file-pod
+   spec:
+     containers:
+       - name: nginx
+         image: nginx
+         volumeMounts:
+           - name: config-volume
+             mountPath: /etc/nginx/conf.d # Файл появится здесь
+     volumes:
+       - name: config-volume
+         configMap:
+           name: my-nginx-config
+   ```
 
 ### Выводы
 
 - ConfigMaps позволяют менять поведение приложения без его пересборки.
-- Не используйте ConfigMaps для секретных данных (паролей, токенов) — для этого есть Secrets.
+- Не используйте ConfigMaps для секретных данных (паролей, токенов) - для этого есть Secrets.
 - Если вы обновите ConfigMap, смонтированный как Volume, файл внутри контейнера обновится (но приложению может понадобиться рестарт или SIGHUP, чтобы подхватить изменения).
 
 ### Вопросы
@@ -555,57 +555,57 @@ spec:
 - В: Можно ли использовать ConfigMap для хранения бинарных данных?
   - О: Для этого лучше использовать `BinaryData` внутри манифеста, но ConfigMap больше заточен под UTF-8 текст.
 
-## Блок 9: Secrets — Работа с base64 и безопасная передача ключей
+## Блок 9: Secrets - Работа с base64 и безопасная передача ключей
 
 ### Текст для выступления
 
-Если **ConfigMap** — это для публичных настроек, то **Secret** — для чувствительных данных: паролей, API-ключей, сертификатов и SSH-токенов.
+Если **ConfigMap** - это для публичных настроек, то **Secret** - для чувствительных данных: паролей, API-ключей, сертификатов и SSH-токенов.
 
 Главное техническое отличие: в манифесте секрета данные должны быть закодированы в **base64**.
 
-> **Важно:** base64 — это НЕ шифрование, а кодирование. Любой, у кого есть доступ к YAML секрета, может его декодировать. Настоящее шифрование (Encryption at rest) настраивается на уровне самого кластера.
+> **Важно:** base64 - это НЕ шифрование, а кодирование. Любой, у кого есть доступ к YAML секрета, может его декодировать. Настоящее шифрование (Encryption at rest) настраивается на уровне самого кластера.
 
 ### Живое демо
 
 1. Подготовим данные в base64:
 
-```bash
-# Кодируем пароль
-echo -n 'my-strong-password' | base64
+   ```bash
+   # Кодируем пароль
+   echo -n 'my-strong-password' | base64
 
-# Результат (например): bXktc3Ryb25nLXBhc3N3b3Jk
-```
+   # Результат (например): bXktc3Ryb25nLXBhc3N3b3Jk
+   ```
 
 2. Создадим файл `secret.yaml`:
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: db-secret
-type: Opaque # Тип для произвольных секретов
-data:
-  password: bXktc3Ryb25nLXBhc3N3b3Jk
-```
+   ```yaml
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: db-secret
+   type: Opaque # Тип для произвольных секретов
+   data:
+     password: bXktc3Ryb25nLXBhc3N3b3Jk
+   ```
 
 3. Использование в поде (как переменная окружения):
 
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: secret-pod
-spec:
-  containers:
-    - name: app
-      image: nginx
-      env:
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: db-secret
-              key: password
-```
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: secret-pod
+   spec:
+     containers:
+       - name: app
+         image: nginx
+         env:
+           - name: DB_PASSWORD
+             valueFrom:
+               secretKeyRef:
+                 name: db-secret
+                 key: password
+   ```
 
 _Внутри контейнера переменная `DB_PASSWORD` будет содержать уже декодированный пароль: `my-strong-password`._
 
@@ -624,9 +624,9 @@ _Внутри контейнера переменная `DB_PASSWORD` будет
 - В: Можно ли использовать ConfigMap для хранения бинарных данных?
   - О: Для этого лучше использовать `BinaryData` внутри манифеста, но ConfigMap больше заточен под UTF-8 текст.
 
-Завершаем первый воркшоп **Блоком 10: Порты и TargetPorts** — Распутываем клубок сетевых адресов. Разберем, как трафик проходит путь от браузера до конкретного процесса в контейнере.
+Завершаем первый воркшоп **Блоком 10: Порты и TargetPorts** - Распутываем клубок сетевых адресов. Разберем, как трафик проходит путь от браузера до конкретного процесса в контейнере.
 
-## Блок 10: Порты и TargetPorts — Распутываем клубок сетевых адресов
+## Блок 10: Порты и TargetPorts - Распутываем клубок сетевых адресов
 
 ### Текст для выступления
 
@@ -665,13 +665,13 @@ spec:
 
 2. Проверим соответствие портов:
 
-```bash
-# Посмотрим описание сервиса
-kubectl describe svc web-service
+   ```bash
+   # Посмотрим описание сервиса
+   kubectl describe svc web-service
 
-# Проверим, что под действительно слушает нужный порт
-kubectl get pod -l app=web -o jsonpath='{.items[0].spec.containers[0].ports}'
-```
+   # Проверим, что под действительно слушает нужный порт
+   kubectl get pod -l app=web -o jsonpath='{.items[0].spec.containers[0].ports}'
+   ```
 
 3. "Прострел" портов через Port-Forward (для отладки):
 
@@ -685,7 +685,7 @@ _Теперь приложение из пода (`порт 8080`) доступ�
 ### Выводы
 
 - `targetPort` должен всегда совпадать с портом, который слушает ваш сервер в коде.
-- `port` и `targetPort` могут быть разными (это хорошая практика: снаружи всегда 80, внутри — что угодно).
+- `port` и `targetPort` могут быть разными (это хорошая практика: снаружи всегда 80, внутри - что угодно).
 - Если не указать `targetPort`, он по умолчанию станет таким же, как `port`.
 - `nodePort` всегда находится в диапазоне 30000-32767.
 
